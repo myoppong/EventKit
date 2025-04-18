@@ -24,7 +24,7 @@ app.use(userRouter);
 app.use(eventRouter)
 
 // Connect to MongoDB
-await mongoose.connect(process.env.db_url);
+await mongoose.connect(process.env.db_URL);
 console.log(' MongoDB connected');
 
 // Create Admin if not existing
