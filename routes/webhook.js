@@ -22,85 +22,78 @@ payRouter.post('/paystack/webhook', express.raw({ type: 'application/json' }), a
 
     if (event.event === 'charge.success') {
       const { metadata, reference } = event.data;
-
+    
       const ticket = await ticketModel.findById(metadata.ticketId)
         .populate('event')
         .populate('instances.buyer');
-
+    
       if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
-
+    
       // Check if tickets have already been issued for this reference
       const alreadyIssued = ticket.instances.some((inst) => inst.reference.startsWith(reference));
       if (alreadyIssued) return res.status(200).send('Tickets already issued');
-
+    
       const quantity = metadata.quantity || 1;
-
+      const newInstances = [];
+    
       for (let i = 0; i < quantity; i++) {
         const ticketNumber = ticket.soldCount + 1;
         ticket.soldCount = ticketNumber;
-
-        const newInstance = {
-          buyer: metadata.userId,
-          ticketNumber,
-          reference: `${reference}-${i + 1}`, // Unique reference per ticket
-          customFieldResponses: metadata.customFieldResponses || [],
-          qrCode: '',
-          status: 'valid',
-        };
-
-        ticket.instances.push(newInstance);
-      }
-
-      await ticket.save();
-
-      // Generate QR codes and upload images for each ticket instance
-      for (let i = 0; i < quantity; i++) {
+    
         const currentReference = `${reference}-${i + 1}`;
-        const createdInstance = ticket.instances.find(
-          (t) => t.reference === currentReference
-        );
-
-        if (!createdInstance) continue;
-
+    
         // Get detailed info
-        const attendeeName = createdInstance?.buyer?.name || 'Attendee';
+        const attendeeName = metadata.attendeeName || 'Attendee';
         const eventName = ticket.event?.title || 'Event';
-        const eventDate = ticket.event?.date
-          ? new Date(ticket.event.date).toLocaleDateString('en-US', {
+        const eventDate = ticket.event?.startDate
+          ? new Date(ticket.event.startDate).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
               day: 'numeric',
             })
           : 'Date';
         const ticketType = ticket.type;
-
+    
         // Download ticket image
         const ticketImageResponse = await fetch(ticket.ticketImages[0]);
         const ticketImageBuffer = Buffer.from(await ticketImageResponse.arrayBuffer());
-
+    
         const qrOverlayBuffer = await generateQRCode(
-          createdInstance.id,
+          ticket.id,
           ticketImageBuffer,
-          createdInstance.ticketNumber,
+          ticketNumber,
           attendeeName,
           eventName,
           ticketType,
           eventDate
         );
-
+    
         const upload = await imagekit.upload({
           file: qrOverlayBuffer,
           fileName: `ticket-${ticket.type}-${Date.now()}-${i + 1}`,
           folder: '/finalTicket',
         });
-
-        createdInstance.qrCode = upload.url;
+    
+        const newInstance = {
+          buyer: metadata.userId,
+          ticketNumber,
+          reference: currentReference,
+          customFieldResponses: metadata.customFieldResponses || [],
+          qrCode: upload.url,
+          status: 'valid',
+        };
+    
+        newInstances.push(newInstance);
       }
-
+    
+      // Add all new instances to the ticket
+      ticket.instances.push(...newInstances);
+    
       await ticket.save();
-
+    
       return res.status(200).send('Tickets issued');
     }
+    
 
     res.status(200).send('Ignored');
   } catch (err) {
