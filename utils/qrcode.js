@@ -23,39 +23,38 @@ export const generateQRCode = async (
   eventDate
 ) => {
   try {
-    // Resize the base image first
-    const resizedBaseImage = await sharp(ticketImageBuffer)
+    // 1) Resize your base ticket once up‑front
+    const base = await sharp(ticketImageBuffer)
       .resize({ width: 1000 })
       .toBuffer();
 
-    // Generate QR code buffer
+    // 2) Generate a clean PNG QR code buffer
     const qrCodeBuffer = await QRCode.toBuffer(ticketInstanceId.toString(), {
       errorCorrectionLevel: 'H',
       type: 'png',
       width: 300,
     });
 
-    // Process QR code buffer to ensure compatibility
-    const processedQRCode = await sharp(qrCodeBuffer).png().toBuffer();
-
-    // SVG Text Overlay
+    // 3) Prepare your SVG text overlay
     const svgText = `
-      <svg width="1000" height="500">
+      <svg width="1000" height="600">
         <style>
-          .label { font-size: 38px; font-family: Arial, sans-serif; fill: #000; font-weight: bold; }
+          .label { font-size: 36px; font-family: Arial, sans-serif; fill: #000; font-weight: bold; }
         </style>
-        <text x="50" y="400" class="label">Ticket #${ticketNumber}</text>
-        <text x="50" y="450" class="label">Attendee: ${attendeeName}</text>
-        <text x="50" y="500" class="label">Event: ${eventName}</text>
-        <text x="50" y="550" class="label">Type: ${ticketType}</text>
-        <text x="50" y="600" class="label">Date: ${eventDate}</text>
+        <text x="50"  y="450" class="label">Ticket #${ticketNumber}</text>
+        <text x="50"  y="500" class="label">Attendee: ${attendeeName}</text>
+        <text x="50"  y="550" class="label">Event: ${eventName}</text>
+        <text x="600" y="450" class="label">Type: ${ticketType}</text>
+        <text x="600" y="500" class="label">Date: ${eventDate}</text>
       </svg>
     `;
 
-    // Composite QR code and text onto the resized base image
-    const ticketWithQr = await sharp(resizedBaseImage)
+    // 4) Composite QR *then* text onto your resized base
+    const ticketWithQr = await sharp(base)
       .composite([
-        { input: processedQRCode, top: 50, left: 50 },
+        // QR on top-left
+        { input: qrCodeBuffer, top: 50, left: 50 },
+        // Text overlay
         { input: Buffer.from(svgText), top: 0, left: 0 },
       ])
       .png()
