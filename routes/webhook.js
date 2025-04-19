@@ -7,7 +7,6 @@ import { generateQRCode } from '../utils/qrcode.js';
 import {imagekit} from '../utils/imagekit.js';
 
 const payRouter = Router();
-
 payRouter.post('/paystack/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
     // Verify webhook signature

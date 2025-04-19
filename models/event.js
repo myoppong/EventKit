@@ -5,7 +5,7 @@ const eventSchema = new Schema(
     {
         organizer: {
             type: Schema.Types.ObjectId,
-            ref: 'User', // Assuming the organizer is a user, change it if needed
+            ref: 'User', 
             required: true
         },
         title: { type: String, required: true },

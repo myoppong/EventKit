@@ -3,7 +3,7 @@ import normalize from 'normalize-mongoose';
 
 const ticketSchema = new Schema(
     {
-        event: { type: Schema.Types.ObjectId, ref: 'event', required: true },
+        event: { type: Schema.Types.ObjectId, ref: 'Event', required: true },
         type: { type: String, required: true }, // VIP, Regular, etc.
         description: { type: String },
         price: { type: Number, required: true },
@@ -34,7 +34,7 @@ const ticketSchema = new Schema(
         // Instance specific fields (this is where we integrate the ticketInstance fields)
         instances: [
             {
-                buyer: { type: Schema.Types.ObjectId, ref: 'user', required: true }, // Who bought the ticket
+                buyer: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Who bought the ticket
                 qrCode: { type: String, required: true }, // QR code of the ticket
                 ticketNumber: { type: Number, required: true }, // Auto-incremented ticket number per ticket type
                 customFieldResponses: [
