@@ -35,6 +35,7 @@ const ticketSchema = new Schema(
         instances: [
             {
                 buyer: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Who bought the ticket
+                reference: { type: String, required: true },
                 qrCode: { type: String, required: true }, // QR code of the ticket
                 ticketNumber: { type: Number, required: true }, // Auto-incremented ticket number per ticket type
                 customFieldResponses: [
