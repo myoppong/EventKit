@@ -2,6 +2,7 @@ import {Router} from 'express';
 import express from 'express';
 import crypto from 'crypto';
 import { ticketModel } from '../models/ticket.js';
+import { eventModel } from '../models/event.js';
 import { generateQRCode } from '../utils/qrcode.js';
 import {imagekit} from '../utils/imagekit.js';
 
