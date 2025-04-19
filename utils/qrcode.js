@@ -13,15 +13,30 @@
 import QRCode from 'qrcode';
 import sharp from 'sharp';
 
-export const generateQRCode = async (ticketInstanceId, ticketImageBuffer, ticketNumber, attendeeName, eventName, ticketType,
+export const generateQRCode = async (
+  ticketInstanceId,
+  ticketImageBuffer,
+  ticketNumber,
+  attendeeName,
+  eventName,
+  ticketType,
   eventDate
 ) => {
   try {
+    // Resize the base image first
+    const resizedBaseImage = await sharp(ticketImageBuffer)
+      .resize({ width: 1000 })
+      .toBuffer();
+
+    // Generate QR code buffer
     const qrCodeBuffer = await QRCode.toBuffer(ticketInstanceId.toString(), {
       errorCorrectionLevel: 'H',
       type: 'png',
       width: 300,
     });
+
+    // Process QR code buffer to ensure compatibility
+    const processedQRCode = await sharp(qrCodeBuffer).png().toBuffer();
 
     // SVG Text Overlay
     const svgText = `
@@ -37,10 +52,12 @@ export const generateQRCode = async (ticketInstanceId, ticketImageBuffer, ticket
       </svg>
     `;
 
-    const ticketWithQr = await sharp(ticketImageBuffer)
-      .composite([{ input: qrCodeBuffer, top: 50, left: 50 }])
-      .resize({ width: 1000 })
-      .composite([{ input: Buffer.from(svgText), top: 0, left: 0 }])
+    // Composite QR code and text onto the resized base image
+    const ticketWithQr = await sharp(resizedBaseImage)
+      .composite([
+        { input: processedQRCode, top: 50, left: 50 },
+        { input: Buffer.from(svgText), top: 0, left: 0 },
+      ])
       .png()
       .toBuffer();
 
