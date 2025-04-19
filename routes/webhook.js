@@ -30,8 +30,13 @@ payRouter.post('/paystack/webhook', express.raw({ type: 'application/json' }), a
       if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
       // Check if tickets have already been issued for this reference
-      const alreadyIssued = ticket.instances.some((inst) => inst.reference.startsWith(reference));
+      // only compare when reference exists
+      const alreadyIssued = ticket.instances.some(inst =>
+        inst.reference?.startsWith(reference)
+      );
+
       if (alreadyIssued) return res.status(200).send('Tickets already issued');
+
 
       const quantity = metadata.quantity || 1;
       const newInstances = [];
