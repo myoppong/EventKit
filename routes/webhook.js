@@ -79,7 +79,7 @@ payRouter.post('/paystack/webhook', express.raw({ type: 'application/json' }), a
         const ticketImageBuffer = Buffer.from(await ticketImageResponse.arrayBuffer());
 
         const qrOverlayBuffer = await generateQRCode(
-          createdInstance._id,
+          createdInstance.id,
           ticketImageBuffer,
           createdInstance.ticketNumber,
           attendeeName,
