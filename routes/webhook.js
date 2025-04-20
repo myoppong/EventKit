@@ -41,16 +41,11 @@ payRouter.post(
       // for (let i = 0; i < quantity; i++) {
       //   const ticketNumber = ++ticket.soldCount;
       //   const ref          = `${reference}-${i+1}`;
-      for (let i = 0; i < ticketData.length; i++) {
-        const item = ticketData[i];
+      for (let i = 0; i < quantity; i++) {
+        const ticketNumber = ++ticket.soldCount;
         const ref = `${reference}-${i + 1}`;
         console.log("Generated reference for ticket instance:", ref);
-
-        // Log the references to check if they match as expected
-  console.log('Paystack reference:', reference); // Paystack's reference from the webhook
-  console.log('Generated reference for ticket instance:', ref); // Generated reference with the ticket instance
-
-        // generate the overlaid ticket buffer
+      
         const qrBuf = await generateQRCode(
           ticket.id,
           bgBuf,
@@ -60,18 +55,18 @@ payRouter.post(
           ticket.type,
           new Date(ticket.event.startDate).toLocaleDateString()
         );
+      
         if (!qrBuf) {
           console.error('Failed to composite QR for instance', i);
           continue;
         }
-
-        // upload both file + fileName
+      
         const uploadRes = await imagekit.upload({
           file: qrBuf,
-          fileName: `ticket-${ticket.type}-${Date.now()}-${i+1}.png`,
+          fileName: `ticket-${ticket.type}-${Date.now()}-${i + 1}.png`,
           folder: '/finalTicket'
         });
-
+      
         newInstances.push({
           buyer: metadata.userId,
           ticketNumber,
@@ -81,6 +76,7 @@ payRouter.post(
           status: 'valid'
         });
       }
+      
 
       ticket.instances.push(...newInstances);
       await ticket.save();
