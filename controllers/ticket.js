@@ -60,7 +60,7 @@ export const getMyTicketsAfterPayment = async (req, res) => {
 
       userInstances.forEach(instance => {
         result.push({
-          ticketId: ticket._id,
+          ticketId: ticket.id,
           event: ticket.event.title,
           date: ticket.event.startDate,
           ticketType: ticket.type,
