@@ -10,7 +10,7 @@
 // };
 
 import QRCode from 'qrcode';
-import sharp  from 'sharp';
+import sharp from 'sharp';
 
 export const generateQRCode = async (
   ticketInstanceId,
@@ -22,32 +22,29 @@ export const generateQRCode = async (
   eventDate
 ) => {
   try {
-    // Resize ticket base image to known width (optional)
-    const baseImg = sharp(ticketImageBuffer).resize({ width: 1000 });
-    const meta = await baseImg.metadata(); // Get dimensions
-    const baseBuf = await baseImg.png().toBuffer();
+    // Step 1: Resize ticket image
+    const resizedBase = sharp(ticketImageBuffer).resize({ width: 1000 });
+    const baseBuf = await resizedBase.png().toBuffer();
+    const meta = await sharp(baseBuf).metadata(); // Accurate post-resize dimensions
 
-    // Log background dimensions
     console.log('📐 Ticket background size:', meta.width, 'x', meta.height);
 
-    // Dynamically set QR size based on base image size (20% of width)
+    // Step 2: Create QR code at 20% of width
     const qrSize = Math.floor(meta.width * 0.2);
+    const rawQR = await QRCode.toBuffer(ticketInstanceId.toString(), {
+      errorCorrectionLevel: 'H',
+      type: 'png',
+    });
 
-    // Generate resized QR code
-    const rawQR = await QRCode.toBuffer(
-      ticketInstanceId.toString(),
-      { errorCorrectionLevel: 'H', type: 'png' }
-    );
-
-    const qrCodeBuf = await sharp(rawQR)
-      .resize(qrSize, qrSize)
-      .toBuffer();
-
-    // Log QR size
+    const qrCodeBuf = await sharp(rawQR).resize(qrSize, qrSize).toBuffer();
     const qrMeta = await sharp(qrCodeBuf).metadata();
     console.log('📐 QR code resized to:', qrMeta.width, 'x', qrMeta.height);
 
-    // Build overlay text as SVG, sized to the base image
+    // Step 3: Position QR code in bottom-right corner
+    const qrX = meta.width - qrMeta.width - 50;
+    const qrY = meta.height - qrMeta.height - 50;
+
+    // Step 4: Create SVG for text
     const svgText = `
       <svg width="${meta.width}" height="${meta.height}">
         <style>.label { font: bold 36px Arial; fill: #000; }</style>
@@ -59,11 +56,11 @@ export const generateQRCode = async (
       </svg>
     `;
 
-    // Composite QR and SVG onto ticket
+    // Step 5: Composite all
     return await sharp(baseBuf)
       .composite([
-        { input: qrCodeBuf, top: 50, left: 50 }, // Adjust QR position as needed
-        { input: Buffer.from(svgText), top: 0, left: 0 }
+        { input: qrCodeBuf, left: qrX, top: qrY },
+        { input: Buffer.from(svgText), left: 0, top: 0 }
       ])
       .png()
       .toBuffer();
@@ -73,6 +70,7 @@ export const generateQRCode = async (
     return null;
   }
 };
+
 
 
 
