@@ -38,9 +38,13 @@ payRouter.post(
       const bgResponse = await fetch(ticket.ticketImages[0]);
       const bgBuf      = Buffer.from(await bgResponse.arrayBuffer());
 
-      for (let i = 0; i < quantity; i++) {
-        const ticketNumber = ++ticket.soldCount;
-        const ref          = `${reference}-${i+1}`;
+      // for (let i = 0; i < quantity; i++) {
+      //   const ticketNumber = ++ticket.soldCount;
+      //   const ref          = `${reference}-${i+1}`;
+      for (let i = 0; i < ticketData.length; i++) {
+        const item = ticketData[i];
+        const ref = `${reference}-${i + 1}`;
+        console.log("Generated reference for ticket instance:", ref);
 
         // Log the references to check if they match as expected
   console.log('Paystack reference:', reference); // Paystack's reference from the webhook
