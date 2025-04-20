@@ -25,11 +25,11 @@ export const generateQRCode = async (
     // Step 1: Resize ticket image
     const resizedBase = sharp(ticketImageBuffer).resize({ width: 1000 });
     const baseBuf = await resizedBase.png().toBuffer();
-    const meta = await sharp(baseBuf).metadata(); // Accurate post-resize dimensions
+    const meta = await sharp(baseBuf).metadata(); // Get accurate dimensions
 
     console.log('📐 Ticket background size:', meta.width, 'x', meta.height);
 
-    // Step 2: Create QR code at 20% of width
+    // Step 2: Create QR code
     const qrSize = Math.floor(meta.width * 0.2);
     const rawQR = await QRCode.toBuffer(ticketInstanceId.toString(), {
       errorCorrectionLevel: 'H',
@@ -40,19 +40,22 @@ export const generateQRCode = async (
     const qrMeta = await sharp(qrCodeBuf).metadata();
     console.log('📐 QR code resized to:', qrMeta.width, 'x', qrMeta.height);
 
-    // Step 3: Position QR code in bottom-right corner
-    const qrX = meta.width - qrMeta.width - 50;
-    const qrY = meta.height - qrMeta.height - 50;
+    // Step 3: Calculate positions
+    const padding = 80;
+    const qrX = meta.width - qrMeta.width - padding;
+    const qrY = meta.height - qrMeta.height - padding;
 
-    // Step 4: Create SVG for text
+    // Step 4: Adjust right-side text upward to avoid QR code
+    const rightTextY = meta.height - qrMeta.height - 100;
+
     const svgText = `
       <svg width="${meta.width}" height="${meta.height}">
         <style>.label { font: bold 36px Arial; fill: #000; }</style>
         <text x="50" y="${meta.height - 150}" class="label">Ticket #${ticketNumber}</text>
         <text x="50" y="${meta.height - 100}" class="label">Attendee: ${attendeeName}</text>
         <text x="50" y="${meta.height - 50}"  class="label">Event: ${eventName}</text>
-        <text x="${meta.width - 350}" y="${meta.height - 150}" class="label">Type: ${ticketType}</text>
-        <text x="${meta.width - 350}" y="${meta.height - 100}" class="label">Date: ${eventDate}</text>
+        <text x="${meta.width - 350}" y="${rightTextY}" class="label">Type: ${ticketType}</text>
+        <text x="${meta.width - 350}" y="${rightTextY + 50}" class="label">Date: ${eventDate}</text>
       </svg>
     `;
 
@@ -70,6 +73,8 @@ export const generateQRCode = async (
     return null;
   }
 };
+
+
 
 
 
