@@ -42,6 +42,10 @@ payRouter.post(
         const ticketNumber = ++ticket.soldCount;
         const ref          = `${reference}-${i+1}`;
 
+        // Log the references to check if they match as expected
+  console.log('Paystack reference:', reference); // Paystack's reference from the webhook
+  console.log('Generated reference for ticket instance:', ref); // Generated reference with the ticket instance
+
         // generate the overlaid ticket buffer
         const qrBuf = await generateQRCode(
           ticket.id,
@@ -77,6 +81,8 @@ payRouter.post(
       ticket.instances.push(...newInstances);
       await ticket.save();
       res.status(200).send('Tickets issued');
+      console.log('Ticket instances after push:', ticket.instances);
+
 
     } catch (err) {
       console.error('Webhook Error:', err);
