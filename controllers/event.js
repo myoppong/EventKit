@@ -241,7 +241,6 @@ export const getAllEvents = async (req, res) => {
    }
  };
  
-
  export const getEventAttendeesPaginated = async (req, res) => {
   try {
     const { eventId } = req.params;
@@ -288,14 +287,14 @@ export const getAllEvents = async (req, res) => {
 
 export const getMyEventsOverview = async (req, res) => {
   try {
-    const organizerId = req.user.id;
+    const organizerId = req.auth.id;
 
     const events = await eventModel.find({ organizer: organizerId }).lean();
 
-    const allTickets = await ticketModel.find({ event: { $in: events.map(e => e.id) } }).lean();
+    const allTickets = await ticketModel.find({ event: { $in: events.map(e => e._id) } }).lean();
 
     const result = events.map(event => {
-      const ticketsForEvent = allTickets.filter(t => t.event.toString() === event.id.toString());
+      const ticketsForEvent = allTickets.filter(t => t.event.toString() === event._id.toString());
 
       let sold = 0;
       let total = 0;
@@ -306,9 +305,9 @@ export const getMyEventsOverview = async (req, res) => {
       });
 
       return {
-        eventId: event.id,
+        eventId: event._id,
         title: event.title,
-        banner: event.banner,
+        banner: event.bannerImage, // ✅ Corrected field
         ticketsSold: sold,
         ticketsLeft: total - sold
       };
@@ -319,5 +318,112 @@ export const getMyEventsOverview = async (req, res) => {
   } catch (err) {
     console.error('Error fetching event overview:', err);
     res.status(500).json({ message: 'Failed to load events.' });
+  }
+};
+
+
+
+
+// controllers/eventController.js
+
+export const updateEvent = async (req, res) => {
+  try {
+    const { files, body, params, auth } = req;
+    const { eventId } = params;
+
+    if (!body.data) {
+      return res.status(400).json({ message: "Missing event data" });
+    }
+
+    let parsedData;
+    try {
+      parsedData = JSON.parse(body.data);
+    } catch (parseErr) {
+      return res.status(400).json({ message: "Invalid JSON in 'data' field" });
+    }
+
+    const {
+      title,
+      description,
+      location,
+      startDate,
+      endDate,
+      type,
+      category,
+      socialLinks,
+      registrationDeadline,
+      allowAttendeeMessaging,
+      refundPolicy
+    } = parsedData;
+
+    const bannerFile = files?.banner?.[0];
+
+    let bannerUrl;
+    if (bannerFile) {
+      const upload = await imagekit.upload({
+        file: bannerFile.buffer,
+        fileName: `event-banner-${Date.now()}`,
+        folder: "/eventBanner",
+      });
+      bannerUrl = upload.url;
+    }
+
+    const updated = await eventModel.findOneAndUpdate(
+      { id: eventId, organizer: auth.id },
+      {
+        title,
+        description,
+        location,
+        startDate,
+        endDate,
+        type,
+        category,
+        socialLinks,
+        registrationDeadline,
+        allowMessaging: allowAttendeeMessaging,
+        refundPolicy,
+        ...(bannerUrl && { bannerImage: bannerUrl }),
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({ message: "Event not found or unauthorized" });
+    }
+
+    res.status(200).json({
+      message: "Event updated successfully",
+      event: updated,
+    });
+  } catch (err) {
+    console.error("Update Event Error:", err);
+    res.status(500).json({ message: "Server error updating event" });
+  }
+};
+
+
+// controllers/eventController.js
+
+export const deleteEvent = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const organizerId = req.auth.id;
+
+    const event = await eventModel.findOneAndDelete({
+      id: eventId,
+      organizer: organizerId,
+    });
+
+    if (!event) {
+      return res.status(404).json({ message: "Event not found or unauthorized" });
+    }
+
+    // Delete all related tickets
+    await ticketModel.deleteMany({ event: eventId });
+
+    res.status(200).json({ message: "Event and related tickets deleted successfully" });
+  } catch (err) {
+    console.error("Delete Event Error:", err);
+    res.status(500).json({ message: "Server error deleting event" });
   }
 };

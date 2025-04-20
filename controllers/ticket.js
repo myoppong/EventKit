@@ -2,10 +2,7 @@
 import { ticketModel } from '../models/ticket.js';
 import { generateQRCode } from '../utils/qrcode.js';
 import { imagekit } from "../utils/imagekit.js";
-
-
 import { initializeTransaction } from '../utils/paystack.js';
-
 export const initiatePurchase = async (req, res) => {
   try {
     const { ticketId, quantity = 1, customFieldResponses = [] } = req.body;
@@ -40,5 +37,79 @@ export const initiatePurchase = async (req, res) => {
   }
 };
 
+// Attendee - Get My Tickets
+// Attendee - Get My Tickets after payment
+export const getMyTicketsAfterPayment = async (req, res) => {
+  try {
+    const userId = req.auth.id;
+    const { reference } = req.query;
+
+    const tickets = await ticketModel.find({ 'instances.buyer': userId })
+      .populate('event')
+      .lean();
+
+    const result = [];
+
+    tickets.forEach(ticket => {
+      let userInstances = ticket.instances.filter(inst => inst.buyer?.toString() === userId);
+
+      // Optional: filter by payment reference
+      if (reference) {
+        userInstances = userInstances.filter(inst => inst.reference?.startsWith(reference));
+      }
+
+      userInstances.forEach(instance => {
+        result.push({
+          ticketId: ticket._id,
+          event: ticket.event.title,
+          date: ticket.event.startDate,
+          ticketType: ticket.type,
+          qrCode: instance.qrCode,
+          ticketNumber: instance.ticketNumber,
+          status: instance.status,
+          reference: instance.reference
+        });
+      });
+    });
+
+    res.status(200).json({ tickets: result });
+  } catch (err) {
+    console.error('Error getting user tickets:', err);
+    res.status(500).json({ message: 'Server error fetching tickets.' });
+  }
+};
 
 
+// Attendee - Get ALL My Tickets (Printable Anytime)
+export const getAllMyTickets = async (req, res) => {
+  try {
+    const userId = req.auth.id;
+
+    // Find all tickets where this user has at least one ticket instance
+    const tickets = await ticketModel.find({ 'instances.buyer': userId })
+      .populate('event')
+      .lean();
+
+    const result = [];
+
+    tickets.forEach(ticket => {
+      const userInstances = ticket.instances.filter(inst => inst.buyer?.toString() === userId);
+      userInstances.forEach(instance => {
+        result.push({
+          ticketId: ticket._id,
+          eventTitle: ticket.event.title,
+          eventDate: ticket.event.startDate,
+          ticketType: ticket.type,
+          ticketNumber: instance.ticketNumber,
+          status: instance.status,
+          qrCodeImage: instance.qrCode,  // This is the full overlaid ticket image
+        });
+      });
+    });
+
+    res.status(200).json({ tickets: result });
+  } catch (err) {
+    console.error('Error fetching user’s tickets:', err);
+    res.status(500).json({ message: 'Unable to fetch tickets at the moment.' });
+  }
+};
