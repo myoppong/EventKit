@@ -164,10 +164,6 @@ export const previewEvent = async (req, res) => {
 };
 
 
-  
-  
-
-
 
 
 //  GET All Events
@@ -246,3 +242,82 @@ export const getAllEvents = async (req, res) => {
  };
  
 
+ export const getEventAttendeesPaginated = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const skip = (page - 1) * limit;
+
+    const tickets = await ticketModel
+      .find({ event: eventId })
+      .populate('instances.buyer', 'name email')
+      .lean();
+
+    let attendees = [];
+
+    tickets.forEach(ticket => {
+      ticket.instances.forEach(inst => {
+        if (inst.status === 'valid') {
+          attendees.push({
+            name: inst.buyer?.name,
+            email: inst.buyer?.email,
+            ticketType: ticket.type,
+            ticketNumber: inst.ticketNumber,
+            paymentStatus: 'Paid'
+          });
+        }
+      });
+    });
+
+    const paginated = attendees.slice(skip, skip + parseInt(limit));
+
+    res.status(200).json({
+      total: attendees.length,
+      page: Number(page),
+      perPage: Number(limit),
+      attendees: paginated
+    });
+
+  } catch (err) {
+    console.error('Error fetching paginated attendees:', err);
+    res.status(500).json({ message: 'Failed to load attendees.' });
+  }
+};
+
+
+export const getMyEventsOverview = async (req, res) => {
+  try {
+    const organizerId = req.user.id;
+
+    const events = await eventModel.find({ organizer: organizerId }).lean();
+
+    const allTickets = await ticketModel.find({ event: { $in: events.map(e => e.id) } }).lean();
+
+    const result = events.map(event => {
+      const ticketsForEvent = allTickets.filter(t => t.event.toString() === event.id.toString());
+
+      let sold = 0;
+      let total = 0;
+
+      ticketsForEvent.forEach(ticket => {
+        sold += ticket.instances.filter(inst => inst.status === 'valid').length;
+        total += ticket.instances.length;
+      });
+
+      return {
+        eventId: event.id,
+        title: event.title,
+        banner: event.banner,
+        ticketsSold: sold,
+        ticketsLeft: total - sold
+      };
+    });
+
+    res.status(200).json({ events: result });
+
+  } catch (err) {
+    console.error('Error fetching event overview:', err);
+    res.status(500).json({ message: 'Failed to load events.' });
+  }
+};
