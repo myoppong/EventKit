@@ -84,9 +84,9 @@ export const loginUser = async (req, res, next) => {
         }
 
         // Check the role (optional if role verification is required for login)
-        if (user.role !== value.role) {
-            return res.status(403).json({ message: 'Unauthorized role selected' });
-        }
+        // if (user.role !== value.role) {
+        //     return res.status(403).json({ message: 'Unauthorized role selected' });
+        // }
 
         // Generate access token
         const accessToken = jwt.sign(
@@ -109,4 +109,19 @@ export const loginUser = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
+};
+
+
+// controllers/authController.js
+
+export const logoutUser = async (req, res) => {
+  try {
+    // Optionally, you can perform token blacklisting here if needed
+    res.status(200).json({
+      message: "Logged out successfully. Please discard the token on the client side.",
+    });
+  } catch (err) {
+    console.error("Logout Error:", err);
+    res.status(500).json({ message: "Error during logout" });
+  }
 };

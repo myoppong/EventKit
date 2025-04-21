@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { loginUser,registerUser } from "../controllers/user.js";
+import { loginUser,registerUser,logoutUser } from "../controllers/user.js";
+import { verifyJWT } from "../middlewares/verifyJWT.js";
 //create user router
 const userRouter = Router();
 
@@ -9,5 +10,7 @@ const userRouter = Router();
 //define user routes
 userRouter.post("/login", loginUser);
 userRouter.post("/register", registerUser);
+userRouter.post("/logout", verifyJWT, logoutUser);
+
 
 export default userRouter;

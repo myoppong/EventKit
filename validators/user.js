@@ -1,6 +1,5 @@
 import Joi from "joi";
 
-
 export const userRegisterSchema = Joi.object({
   username: Joi.string()
     .min(3)
@@ -36,6 +35,14 @@ export const userRegisterSchema = Joi.object({
       'string.min': 'Password must be at least 6 characters.',
     }),
 
+  confirmPassword: Joi.string()
+    .valid(Joi.ref('password'))
+    .required()
+    .messages({
+      'any.only': 'Confirm password must match password.',
+      'string.empty': 'Confirm password is required.',
+    }),
+
   role: Joi.string()
     .valid('admin', 'organizer', 'attendee')
     .required()
@@ -46,12 +53,12 @@ export const userRegisterSchema = Joi.object({
 });
 
 
+
 export const loginValidator = Joi.object({
   username: Joi.string().alphanum().min(3).max(30).optional(),
   email: Joi.string().email().optional(),  // email is optional but must be valid
   phone: Joi.any().optional(),  // phone number is optional and should follow a specific pattern (e.g., 10 digits)
-  password: Joi.string().min(6).required(),  // password must be at least 6 characters long
-  role: Joi.string().valid("admin", "organizer", "attendee").required()
+  password: Joi.string().min(6).required()  // password must be at least 6 characters long
 }).or('username', 'email', 'phone');  
 
 export default loginValidator;

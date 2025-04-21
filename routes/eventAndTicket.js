@@ -27,12 +27,12 @@ eventRouter.get('/organizer/my-events/overview',isAuthenticated,authorizedRoles(
 );
 
 // Organizer: Update Event
-eventRouter.put( '/organizer/event/:eventId',isAuthenticated,authorizedRoles('organizer'),uploadEventAssets,updateEvent
+eventRouter.put( '/event/update/:eventId',isAuthenticated,authorizedRoles('organizer'),uploadEventAssets,updateEvent
   );
 
 
   // Organizer: Delete Event
-eventRouter.delete('/organizer/event/:eventId',isAuthenticated,authorizedRoles('organizer'),deleteEvent);
+eventRouter.delete('/event/delete/:eventId',isAuthenticated,authorizedRoles('organizer'),deleteEvent);
 
 
 export default eventRouter;

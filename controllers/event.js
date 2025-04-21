@@ -353,7 +353,8 @@ export const updateEvent = async (req, res) => {
       socialLinks,
       registrationDeadline,
       allowAttendeeMessaging,
-      refundPolicy
+      refundPolicy,
+      tickets, 
     } = parsedData;
 
     const bannerFile = files?.banner?.[0];
@@ -368,8 +369,8 @@ export const updateEvent = async (req, res) => {
       bannerUrl = upload.url;
     }
 
-    const updated = await eventModel.findOneAndUpdate(
-      { id: eventId, organizer: auth.id },
+    const updatedEvent = await eventModel.findOneAndUpdate(
+      { _id: eventId, organizer: auth.id },
       {
         title,
         description,
@@ -387,19 +388,60 @@ export const updateEvent = async (req, res) => {
       { new: true }
     );
 
-    if (!updated) {
+    if (!updatedEvent) {
       return res.status(404).json({ message: "Event not found or unauthorized" });
+    }
+
+    //  Handle ticket updates
+    let updatedTickets = [];
+    if (tickets && Array.isArray(tickets)) {
+      updatedTickets = await Promise.all(
+        tickets.map(async (ticket, index) => {
+          const imageFile = files?.[`ticketImage-${index}`]?.[0];
+          let ticketImageUrl;
+
+          if (imageFile) {
+            const upload = await imagekit.upload({
+              file: imageFile.buffer,
+              fileName: `ticket-${ticket.type}-${Date.now()}`,
+              folder: "/ticketImage",
+            });
+            ticketImageUrl = upload.url;
+          }
+
+          if (ticket.id) {
+            //  Update existing ticket
+            return await ticketModel.findOneAndUpdate(
+              { id: ticket.id, event: eventId },
+              {
+                ...ticket,
+                ...(ticketImageUrl && { ticketImages: [ticketImageUrl] }),
+              },
+              { new: true }
+            );
+          } else {
+            //  Create new ticket
+            return await ticketModel.create({
+              ...ticket,
+              event: eventId,
+              ticketImages: ticketImageUrl ? [ticketImageUrl] : [],
+            });
+          }
+        })
+      );
     }
 
     res.status(200).json({
       message: "Event updated successfully",
-      event: updated,
+      event: updatedEvent,
+      tickets: updatedTickets,
     });
   } catch (err) {
     console.error("Update Event Error:", err);
     res.status(500).json({ message: "Server error updating event" });
   }
 };
+
 
 
 // controllers/eventController.js
@@ -410,7 +452,7 @@ export const deleteEvent = async (req, res) => {
     const organizerId = req.auth.id;
 
     const event = await eventModel.findOneAndDelete({
-      id: eventId,
+      _id: eventId,
       organizer: organizerId,
     });
 

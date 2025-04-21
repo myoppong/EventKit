@@ -27,7 +27,7 @@ export const generateQRCode = async (
     const baseBuf = await resizedBase.png().toBuffer();
     const meta = await sharp(baseBuf).metadata();
 
-    console.log('📐 Ticket background size:', meta.width, 'x', meta.height);
+    console.log(' Ticket background size:', meta.width, 'x', meta.height);
 
     // Generate QR Code
     const qrSize = Math.floor(meta.width * 0.2);
@@ -38,7 +38,7 @@ export const generateQRCode = async (
 
     const qrCodeBuf = await sharp(rawQR).resize(qrSize, qrSize).toBuffer();
     const qrMeta = await sharp(qrCodeBuf).metadata();
-    console.log('📐 QR code resized to:', qrMeta.width, 'x', qrMeta.height);
+    console.log(' QR code resized to:', qrMeta.width, 'x', qrMeta.height);
 
     // Position QR bottom-right
     const padding = 50;
