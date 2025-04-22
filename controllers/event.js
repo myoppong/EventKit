@@ -285,41 +285,41 @@ export const getAllEvents = async (req, res) => {
 };
 
 
-export const getMyEventsOverview = async (req, res) => {
-  try {
-    const organizerId = req.auth.id;
+// export const getMyEventsOverview = async (req, res) => {
+//   try {
+//     const organizerId = req.auth.id;
 
-    const events = await eventModel.find({ organizer: organizerId }).lean();
+//     const events = await eventModel.find({ organizer: organizerId }).lean();
 
-    const allTickets = await ticketModel.find({ event: { $in: events.map(e => e._id) } }).lean();
+//     const allTickets = await ticketModel.find({ event: { $in: events.map(e => e._id) } }).lean();
 
-    const result = events.map(event => {
-      const ticketsForEvent = allTickets.filter(t => t.event.toString() === event._id.toString());
+//     const result = events.map(event => {
+//       const ticketsForEvent = allTickets.filter(t => t.event.toString() === event._id.toString());
 
-      let sold = 0;
-      let total = 0;
+//       let sold = 0;
+//       let total = 0;
 
-      ticketsForEvent.forEach(ticket => {
-        sold += ticket.instances.filter(inst => inst.status === 'valid').length;
-        total += ticket.instances.length;
-      });
+//       ticketsForEvent.forEach(ticket => {
+//         sold += ticket.instances.filter(inst => inst.status === 'valid').length;
+//         total += ticket.instances.length;
+//       });
 
-      return {
-        eventId: event._id,
-        title: event.title,
-        banner: event.bannerImage, // ✅ Corrected field
-        ticketsSold: sold,
-        ticketsLeft: total - sold
-      };
-    });
+//       return {
+//         eventId: event._id,
+//         title: event.title,
+//         banner: event.bannerImage, // ✅ Corrected field
+//         ticketsSold: sold,
+//         ticketsLeft: total - sold
+//       };
+//     });
 
-    res.status(200).json({ events: result });
+//     res.status(200).json({ events: result });
 
-  } catch (err) {
-    console.error('Error fetching event overview:', err);
-    res.status(500).json({ message: 'Failed to load events.' });
-  }
-};
+//   } catch (err) {
+//     console.error('Error fetching event overview:', err);
+//     res.status(500).json({ message: 'Failed to load events.' });
+//   }
+// };
 
 
 
@@ -444,7 +444,46 @@ export const updateEvent = async (req, res) => {
 
 
 
-// controllers/eventController.js
+// controllers/event.js
+export const getMyEventsOverview = async (req, res) => {
+  try {
+    const organizerId = req.auth.id;
+
+    // 1. Fetch all events for this organizer
+    const events = await eventModel.find({ organizer: organizerId }).lean();
+
+    // 2. Fetch all ticket‐types for those events
+    const ticketTypes = await ticketModel
+      .find({ event: { $in: events.map(e => e._id) } })
+      .lean();
+
+    // 3. Build the overview
+    const overview = events.map(evt => {
+      // get only the ticket‐types for this event
+      const typesForEvent = ticketTypes.filter(t => t.event.toString() === evt._id.toString());
+
+      // sum soldCount and sum quantity across all types
+      const ticketsSold = typesForEvent.reduce((sum, t) => sum + (t.soldCount || 0), 0);
+      const totalAvailable = typesForEvent.reduce((sum, t) => sum + (t.quantity || 0), 0);
+
+      return {
+        eventId:      evt._id,
+        title:        evt.title,
+        banner:  evt.bannerImage,       // front‑end can use this as a background
+        ticketsSold,                        
+        ticketsLeft:  totalAvailable - ticketsSold
+      };
+    });
+
+    res.status(200).json({ events: overview });
+  } catch (err) {
+    console.error("Error fetching event overview:", err);
+    res.status(500).json({ message: "Failed to load events." });
+  }
+};
+
+
+
 
 export const deleteEvent = async (req, res) => {
   try {

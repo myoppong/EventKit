@@ -4,7 +4,7 @@ import { generateQRCode } from '../utils/qrcode.js';
 import { imagekit } from "../utils/imagekit.js";
 import { initializeTransaction } from '../utils/paystack.js';
 export const initiatePurchase = async (req, res) => {
-  try {
+  try { 
     const { ticketId, quantity = 1, customFieldResponses = [] } = req.body;
     const user = req.auth;
 
