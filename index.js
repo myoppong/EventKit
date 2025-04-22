@@ -8,15 +8,20 @@ import userRouter from './routes/user.js';
 import { userModel } from './models/user.js';
 import eventRouter from './routes/eventAndTicket.js';
 import ticketRouter from './routes/tickets.js';
+import cors from 'cors';
 
 dotenv.config();
 
 const app = express();
 
-// Before any express.json middleware
 app.use(payRouter);
 
 app.use(express.json());
+
+app.use(cors({
+  origin: 'http://localhost:3000', // ✅ allow frontend during dev
+  credentials: true, // if you're sending cookies or headers like Authorization
+}));
 
 // Routes
 app.use(ticketRouter)
