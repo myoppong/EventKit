@@ -1,8 +1,8 @@
 import express from 'express';
+import cors from 'cors';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
-
 import payRouter from './routes/webhook.js';
 import userRouter from './routes/user.js';
 import { userModel } from './models/user.js';
@@ -13,6 +13,11 @@ import cors from 'cors';
 dotenv.config();
 
 const app = express();
+
+app.use(cors({
+  origin: 'http://localhost:3000', // ✅ allow frontend during dev
+  credentials: true, // if you're sending cookies or headers like Authorization
+}));
 
 app.use(payRouter);
 
