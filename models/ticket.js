@@ -19,17 +19,21 @@ const ticketSchema = new Schema(
         },
 
         // Custom fields (optional)
-        customFields: [
-            {
+        customFields: {
+            type: [
+              {
                 label: String,
                 type: {
-                    type: String,
-                    enum: ['text', 'select', 'checkbox'],
-                    default: 'text'
+                  type: String,
+                  enum: ['text','select','checkbox'],
+                  default: 'text'
                 },
-                options: [String] // For select/checkbox custom fields
-            }
-        ],
+                options: [String]
+              }
+            ],
+            default: []   // <-- default to empty array
+          },
+          
 
         // Instance specific fields (this is where we integrate the ticketInstance fields)
         instances: [
