@@ -19,18 +19,13 @@ app.use(cors({
   credentials: true, // if you're sending cookies or headers like Authorization
 }));
 
-app.use(payRouter);
 
+app.use(payRouter);
 
 
 // ↑ Increase the default JSON/body-parser limit from 100kb → 10mb
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
-
-app.use(cors({
-  origin: 'http://localhost:3000', // ✅ allow frontend during dev
-  credentials: true, // if you're sending cookies or headers like Authorization
-}));
 
 // Routes
 app.use(ticketRouter)
