@@ -8,7 +8,6 @@ import userRouter from './routes/user.js';
 import { userModel } from './models/user.js';
 import eventRouter from './routes/eventAndTicket.js';
 import ticketRouter from './routes/tickets.js';
-import cors from 'cors';
 
 dotenv.config();
 
