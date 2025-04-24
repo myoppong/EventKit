@@ -1,10 +1,10 @@
-import multer from "multer";
+
 
 // Memory storage for in-memory buffer (used for uploading to ImageKit)
-const storage = multer.memoryStorage();
+
 
 // Initialize multer with memory storage
-const upload = multer({ storage });
+
 
 // Define fields for banner and dynamic ticket images
 // const uploadEventAssets = (req, res, next) => {
@@ -47,8 +47,40 @@ const upload = multer({ storage });
 // export { uploadEventAssets };
 
 
-export const uploadEventAssets = upload.fields([
-  { name: 'banner', maxCount: 1 },
-  { name: 'ticketImage-0', maxCount: 1 },
-  { name: 'ticketImage-1', maxCount: 1 },
-]);
+// export const uploadEventAssets = upload.fields([
+//   { name: 'banner', maxCount: 1 },
+//   { name: 'ticketImage-0', maxCount: 1 },
+//   { name: 'ticketImage-1', maxCount: 1 },
+// ]);
+
+
+// src/middleware/uploadEventAssets.js
+import multer from "multer";
+const upload = multer({ storage: multer.memoryStorage() });
+
+export const uploadEventAssets = (req, res, next) => {
+  if (!req.body.data) {
+    return res.status(400).json({ message: "Missing event data" });
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(req.body.data);
+  } catch {
+    return res.status(400).json({ message: "Invalid JSON in 'data' field" });
+  }
+
+  // Always expect a banner
+  const fileFields = [{ name: "banner", maxCount: 1 }];
+
+  if (Array.isArray(parsed.tickets)) {
+    parsed.tickets.forEach((_, idx) => {
+      fileFields.push({ name: `ticketImage-${idx}`, maxCount: 1 });
+    });
+  } else {
+    return res.status(400).json({ message: "Missing or invalid ticket data" });
+  }
+
+  // Now call multer with exactly the fields we need
+  upload.fields(fileFields)(req, res, next);
+};
