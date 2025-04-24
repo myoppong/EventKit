@@ -55,32 +55,45 @@
 
 
 // src/middleware/uploadEventAssets.js
+// import multer from "multer";
+// const upload = multer({ storage: multer.memoryStorage() });
+
+// export const uploadEventAssets = (req, res, next) => {
+//   if (!req.body.data) {
+//     return res.status(400).json({ message: "Missing event data" });
+//   }
+
+//   let parsed;
+//   try {
+//     parsed = JSON.parse(req.body.data);
+//   } catch {
+//     return res.status(400).json({ message: "Invalid JSON in 'data' field" });
+//   }
+
+//   // Always expect a banner
+//   const fileFields = [{ name: "banner", maxCount: 1 }];
+
+//   if (Array.isArray(parsed.tickets)) {
+//     parsed.tickets.forEach((_, idx) => {
+//       fileFields.push({ name: `ticketImage-${idx}`, maxCount: 1 });
+//     });
+//   } else {
+//     return res.status(400).json({ message: "Missing or invalid ticket data" });
+//   }
+
+//   // Now call multer with exactly the fields we need
+//   upload.fields(fileFields)(req, res, next);
+// };
 import multer from "multer";
-const upload = multer({ storage: multer.memoryStorage() });
 
-export const uploadEventAssets = (req, res, next) => {
-  if (!req.body.data) {
-    return res.status(400).json({ message: "Missing event data" });
-  }
+// store files in memory so we can hand them off to ImageKit
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-  let parsed;
-  try {
-    parsed = JSON.parse(req.body.data);
-  } catch {
-    return res.status(400).json({ message: "Invalid JSON in 'data' field" });
-  }
-
-  // Always expect a banner
-  const fileFields = [{ name: "banner", maxCount: 1 }];
-
-  if (Array.isArray(parsed.tickets)) {
-    parsed.tickets.forEach((_, idx) => {
-      fileFields.push({ name: `ticketImage-${idx}`, maxCount: 1 });
-    });
-  } else {
-    return res.status(400).json({ message: "Missing or invalid ticket data" });
-  }
-
-  // Now call multer with exactly the fields we need
-  upload.fields(fileFields)(req, res, next);
-};
+// only grab these file‐fields, nothing else
+export const uploadEventAssets = upload.fields([
+  { name: "banner",      maxCount: 1 },
+  { name: "ticketImage-0", maxCount: 1 },
+  { name: "ticketImage-1", maxCount: 1 },
+  // …add one entry per ticket-image slot you expect…
+]);
