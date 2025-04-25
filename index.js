@@ -14,7 +14,7 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: 'https://eventify-y0w0.onrender.com', 
+  origin: 'https://eventlix.netlify.app', 
   credentials: true, 
 }));
 
