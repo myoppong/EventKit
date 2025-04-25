@@ -14,8 +14,8 @@ dotenv.config();
 const app = express();
 
 app.use(cors({
-  origin: 'http://localhost:3000', // ✅ allow frontend during dev
-  credentials: true, // if you're sending cookies or headers like Authorization
+  origin: 'https://eventify-y0w0.onrender.com/', 
+  credentials: true, 
 }));
 
 
